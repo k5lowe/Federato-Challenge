@@ -1,40 +1,50 @@
 import pandas as pd
-from datetime import datetime
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+import glob
+import os
 
 
 
-csv1 = r"1_csv\amplitude_export_chunk_1_anonymized_subchunk_0_100000.csv"
-
-first_file1 = pd.read_csv(csv1)
-df = pd.DataFrame(first_file1)
-
-print(df.shape)
-
-# print(df.columns)
-# df.drop(['$insert_id', ])
-# print(df[['client_event_time','client_upload_time']])
-
-df_copy = df.copy()
-
-# print(df_copy[['client_event_time','client_upload_time']])
+pd.set_option("display.max_colwidth", None)
+plt.figure(figsize=(10, 5))
 
 
-df_copy["client_event_time"] = pd.to_datetime(df_copy["client_event_time"])
-df_copy["Client_Start_Int"] = df_copy['client_event_time'].astype('int64')//10**9
+csv1_folder = "1_csv"
+csv2025_folder = "2025_csv"
 
-df_copy["client_upload_time"] = pd.to_datetime(df_copy["client_upload_time"])
-df_copy["Client_End_Int"] = df_copy['client_upload_time'].astype('int64')//10**9
+csv1_files = glob.glob(os.path.join(csv1_folder, "*.csv"))
+csv2025_files = glob.glob(os.path.join(csv2025_folder, "*.csv"))
+files = csv1_files + csv2025_files
+output_file = "federato_retention_csv2.csv"
 
-df_copy["Time_Spent"] = df_copy["Client_End_Int"] - df_copy["Client_Start_Int"]
 
 
-# print((df_copy[["client_event_time","client_upload_time"]]).head(40))
-# print(df_copy[['client_event_time','Client_Start_Int']])
-# print((df_copy[['Client_Start_Int','Client_End_Int', 'Time_Spent']]).head(40))
-# print(len(df_copy.columns))
-# df_copy = df_copy.drop(['$insert_id','client_event_time','client_upload_time'])
-df_copy = df_copy.drop(columns=['$insert_id', 'client_event_time', 'client_upload_time'])
+retention_minutes = 30
+retention_seconds = retention_minutes * 60
 
-print(df_copy.columns)
+# If running this code again, uncomment the two lines below
+# if os.path.exists(output_file):
+#     os.remove(output_file)
 
-# print(df_copy[['Client_Start_Int','Client_End_Int', 'Time_Spent']])
+
+with open(output_file, 'w') as f:
+    first_csv = True
+    for file in files:
+        
+        for df in pd.read_csv(file,chunksize=100000):
+
+            df_copy = df.copy()
+
+            df_copy["client_event_time"] = pd.to_datetime(df_copy["client_event_time"])
+            df_copy["Client_Start_Int"] = df_copy['client_event_time'].astype('int64')//10**9
+            df_copy["client_upload_time"] = pd.to_datetime(df_copy["client_upload_time"])
+            df_copy["Client_End_Int"] = df_copy['client_upload_time'].astype('int64')//10**9
+
+            df_copy["Client_Time_Spent"] = df_copy["Client_End_Int"] - df_copy["Client_Start_Int"]
+            
+            df_filtered = df_copy[(df_copy["Client_Time_Spent"] > retention_seconds)]
+            df_filtered.to_csv(output_file,header=first_csv,index=True,mode='a')
+            first_csv = False
+            

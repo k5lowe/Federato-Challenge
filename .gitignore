@@ -1,3 +1,4 @@
 .venv
 1_csv/
 2025_csv/
+*.csv
