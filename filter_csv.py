@@ -7,8 +7,8 @@ import os
 
 
 
+
 pd.set_option("display.max_colwidth", None)
-plt.figure(figsize=(10, 5))
 
 
 csv1_folder = "1_csv"
@@ -20,9 +20,9 @@ files = csv1_files + csv2025_files
 output_file = "federato_retention_csv2.csv"
 
 
-
-retention_minutes = 30
-retention_seconds = retention_minutes * 60
+# CHANGE THIS (retention_minutes)
+retention_seconds = 25
+daily_limit = 86400
 
 # If running this code again, uncomment the two lines below
 # if os.path.exists(output_file):
@@ -44,7 +44,7 @@ with open(output_file, 'w') as f:
 
             df_copy["Client_Time_Spent"] = df_copy["Client_End_Int"] - df_copy["Client_Start_Int"]
             
-            df_filtered = df_copy[(df_copy["Client_Time_Spent"] > retention_seconds)]
+            df_filtered = df_copy[(df_copy["Client_Time_Spent"] > 0) & (df_copy["Client_Time_Spent"] < 60)]
             df_filtered.to_csv(output_file,header=first_csv,index=True,mode='a')
             first_csv = False
             
